@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 using UnityEngine.UI;
@@ -43,34 +44,33 @@ public class DungeonGenerator : MonoBehaviour
 
     IEnumerator roomTo3D(int x, int z)
     {
-
         roomMatrix.Clear();
 
-        // Iterate through each row
+        
+        // Reconstruct the 16x16 matrix from the flat list
         for (int i = 0; i < 16; i++)
         {
-
             List<int> row = new List<int>();
-
-            // Iterate through each column
             for (int j = 0; j < 16; j++)
             {
-                // Calculate the index in the flat list
                 int index = i * 16 + j;
-
-                // Add the corresponding value from the flat list to the row
                 row.Add(flaskreq.RoomData[index]);
             }
-
-            // Add the row to the matrix
             roomMatrix.Add(row);
         }
 
-        yield return roomMatrix;
+        // Debug log the reconstructed matrix
+        for (int i = 0; i < roomMatrix.Count; i++)
+        {
+            Debug.Log($"Row {i}: {string.Join(", ", roomMatrix[i])}");
+        }
+
         yield return StartCoroutine(GenerateProps(x, z));
     }
 
-        public void DisplayDungeonMap()
+
+
+    public void DisplayDungeonMap()
     {
         mapTexture = new Texture2D(8, 8);
         mapTexture.filterMode = FilterMode.Point;
@@ -123,35 +123,54 @@ public class DungeonGenerator : MonoBehaviour
 
     IEnumerator StartRoomReq(int x, int z)
     {
-        flaskreq.GetRoomData();
-        Debug.Log(x+"-"+z+" "+"RoomReq: " + (RoomsUpdated + 1));        
-        yield return flaskreq.RoomData;
-        yield return StartCoroutine(roomTo3D(x,z));        
-        
+        yield return StartCoroutine(flaskreq.GetRoomData());  // Wait for the GetRoomData coroutine to complete
+        Debug.Log(x + "-" + z + " " + "RoomReq: " + (RoomsUpdated + 1));        
+        yield return StartCoroutine(roomTo3D(x, z));
     }
-    
-    IEnumerator GenerateProps(int x, int z)
-    {      
-        
-        Debug.Log("Generating Room: "+(RoomsUpdated + 1));  
-        float tilesize = 16f;
 
-        for(int x2 = 0; x2 < 16; x2++)
+    IEnumerator GenerateProps(int x, int z)
+    {
+        Debug.Log("Generating Room: " + (RoomsUpdated + 1));
+        float tileSize = 16f;
+
+        // Check if roomMatrix has the expected size
+        if (roomMatrix.Count != 16 || roomMatrix.Any(row => row.Count != 16))
         {
-            for(int z2 = 0;z2 < 16; z2++)
+            Debug.LogError("roomMatrix does not have the expected size of 16x16.");
+            yield break;
+        }
+
+        for (int x2 = 0; x2 < 16; x2++)
+        {
+            for (int z2 = 0; z2 < 16; z2++)
             {
-                Vector3 pos = new Vector3(x2 + (tilesize * x) - 8, 0, z2 + (tilesize * z) - 8);
-                GameObject props = Instantiate(FindProp(roomMatrix[x2][z2]), pos, Quaternion.identity);
-                instantiatedProps.Add(props);
+                Vector3 pos = new Vector3(x2 + (tileSize * x) - 8, 0, z2 + (tileSize * z) - 8);
+
+                if (roomMatrix[x2].Count > z2)
+                {
+                    GameObject prop = FindProp(roomMatrix[x2][z2]);
+                    if (prop != null)
+                    {
+                        GameObject instantiatedProp = Instantiate(prop, pos, Quaternion.identity);
+                        instantiatedProps.Add(instantiatedProp);
+                    }
+                    else
+                    {
+                        Debug.LogError("FindProp returned null for value: " + roomMatrix[x2][z2]);
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"Index out of range for roomMatrix[{x2}] when accessing element {z2}.");
+                }
             }
         }
 
         RoomsUpdated++;
-        yield return RoomsUpdated;  
-        
+        yield return RoomsUpdated;
     }
 
-    
+
     public void ClearTiles()
     {
         foreach (GameObject tile in instantiatedTiles)
@@ -177,12 +196,12 @@ public class DungeonGenerator : MonoBehaviour
     {
         if (num == 0) return Floor;
         else if (num == 1) return Wall;
-        else if (num == 2) return Door;
-        else if (num == 3) return Bench;
-        else if (num == 4) return Table;
-        else if (num == 5) return Collectable;
-        else if (num == 6) return BookShelf;
-        else if (num == 7) return Torch;
+        else if (num == 2) return Bench;
+        else if (num == 3) return Table;
+        else if (num == 4) return Collectable;
+        else if (num == 5) return BookShelf;
+        else if (num == 6) return Torch;
+        else if (num == 7) return Door;
         else if (num == 8) return Crate;
         else return null;
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,22 +8,22 @@ public class FlaskReq : MonoBehaviour
 {
     [SerializeField] string DungeonGAN_url = "http://127.0.0.1:5000/getDungeonGAN";
     [SerializeField] string DungeonOther_url = "http://127.0.0.1:5000/getDungeonGAN";
-    [SerializeField] string RoomGAN_url = "http://127.0.0.1:5000/getRoomGAN";
+    [SerializeField] string RoomGAN_url = "http://127.0.0.1:5000/getRoomLayout"; // For Room Rand - http://127.0.0.1:5000/getRoomGAN
     [SerializeField] string RoomOther_url = "http://127.0.0.1:5000/getDungeonGAN";
 
     public List<int> DungeonData;
     public List<int> RoomData;
     public DungeonGenerator dungeonGenerator;
 
+    int reqCount = 0;
     public void GetDungeonData()
     {
         StartCoroutine(RequestDungeonGAN());
     }
-    public void GetRoomData()
+    public IEnumerator GetRoomData()
     {
-        StartCoroutine(RequestRoomGAN(dungeonGenerator.RoomsUpdated));
+        yield return StartCoroutine(RequestRoomGAN(dungeonGenerator.RoomsUpdated));
     }
-
 
     IEnumerator RequestDungeonGAN()
     {
@@ -54,9 +55,9 @@ public class FlaskReq : MonoBehaviour
 
     IEnumerator RequestRoomGAN(int roomsup)
     {
-        
-        UnityWebRequest request2 = UnityWebRequest.Get(RoomGAN_url);
-        Debug.Log("Request Sent RoomGAN");
+        string RoomGAN_url_with_timestamp = RoomGAN_url + "?timestamp=" + DateTime.Now.Ticks;
+        UnityWebRequest request2 = UnityWebRequest.Get(RoomGAN_url_with_timestamp);
+        Debug.Log("Request Sent RoomGAN: " + RoomGAN_url_with_timestamp);
 
         yield return request2.SendWebRequest();
 
@@ -68,25 +69,25 @@ public class FlaskReq : MonoBehaviour
         {
             // Parse response JSON using JsonUtility
             string jsonResponse2 = request2.downloadHandler.text;
-            ImageDataResponse response2 = JsonUtility.FromJson<ImageDataResponse>(jsonResponse2);
+            Debug.Log("Response received: " + jsonResponse2);
+            RoomDataResponse response2 = JsonUtility.FromJson<RoomDataResponse>(jsonResponse2);
+            RoomData = response2.room_data;
+            reqCount++;
+            Debug.Log($"Request {reqCount} - RoomData Count: {RoomData.Count}");
 
-            RoomData = response2.image_data;
-
-            Debug.Log(RoomData.Count);
             
-
             
+           
         }
     }
 
-
-    // Class to match the structure of JSON response
     [System.Serializable]
     public class ImageDataResponse
     {
         public string status;
         public List<int> image_data;
     }
+
 
     [System.Serializable]
     public class RoomDataResponse
