@@ -6,10 +6,9 @@ using UnityEngine.Networking;
 
 public class FlaskReq : MonoBehaviour
 {
-    [SerializeField] string DungeonGAN_url = "http://127.0.0.1:5000/getDungeonGAN";
-    [SerializeField] string DungeonOther_url = "http://127.0.0.1:5000/getDungeonGAN";
-    [SerializeField] string RoomGAN_url = "http://127.0.0.1:5000/getRoomLayout"; // For Room Rand - http://127.0.0.1:5000/getRoomGAN
-    [SerializeField] string RoomOther_url = "http://127.0.0.1:5000/getDungeonGAN";
+    public string Dungeon_url = "http://127.0.0.1:5000/getDungeonGAN";  
+    public string Room_url = "http://127.0.0.1:5000/getRoomCGAN"; 
+    
 
     public List<int> DungeonData;
     public List<int> RoomData;
@@ -28,7 +27,7 @@ public class FlaskReq : MonoBehaviour
     IEnumerator RequestDungeonGAN()
     {
         
-        UnityWebRequest request = UnityWebRequest.Get(DungeonGAN_url);
+        UnityWebRequest request = UnityWebRequest.Get(Dungeon_url);
         Debug.Log("Request Sent DungeonGAN");
         
         yield return request.SendWebRequest();
@@ -55,7 +54,7 @@ public class FlaskReq : MonoBehaviour
 
     IEnumerator RequestRoomGAN(int roomsup)
     {
-        string RoomGAN_url_with_timestamp = RoomGAN_url + "?timestamp=" + DateTime.Now.Ticks;
+        string RoomGAN_url_with_timestamp = Room_url + "?timestamp=" + DateTime.Now.Ticks;
         UnityWebRequest request2 = UnityWebRequest.Get(RoomGAN_url_with_timestamp);
         Debug.Log("Request Sent RoomGAN: " + RoomGAN_url_with_timestamp);
 
@@ -73,9 +72,7 @@ public class FlaskReq : MonoBehaviour
             RoomDataResponse response2 = JsonUtility.FromJson<RoomDataResponse>(jsonResponse2);
             RoomData = response2.room_data;
             reqCount++;
-            Debug.Log($"Request {reqCount} - RoomData Count: {RoomData.Count}");
-
-            
+            Debug.Log("RoomDataCount: "+ RoomData.Count);        
             
            
         }
